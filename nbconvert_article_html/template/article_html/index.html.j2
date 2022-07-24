@@ -1,0 +1,63 @@
+{% extends 'lab/index.html.j2' %}
+
+{%- block notebook_css -%}
+<style type="text/css">
+a.artifact {
+    font-weight: bold;
+}
+
+body {
+    max-width: 50em;
+    margin-left: auto;
+    margin-right: auto;
+    text-overflow: auto;
+}
+
+.title {
+    font-size: 300%;
+    font-weight: 900;
+}
+.title p {
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+.authors {
+    
+}
+
+div.abstract {
+    margin-bottom: 1em;
+}
+
+.abstract p {
+    font-size: smaller;
+    margin-left: 10ex;
+    margin-right: 10ex;
+}
+
+.abstract .heading {
+    font-size: larger;
+    font-weight: bold;
+    text-align: center;
+}
+
+.highlight > pre {
+    padding-top: 5pt;
+    padding-left: 5pt;
+    padding-right: 5pt;
+    padding-bottom: 5pt;
+}
+
+hr {
+    margin-bottom: 2em;
+}
+
+
+</style>
+{%- endblock notebook_css -%}
+
+{%- block body_header -%}
+{{ super() }}
+<p>Heyhey!</p>
+{%- endblock body_header -%}

@@ -1,0 +1,14 @@
+name: nbconvert-article-html
+dependencies:
+  - flake8
+  - mypy
+  - pip
+  - python>=3.8
+  - pytest
+  - setuptools
+  - tqdm
+  - twine
+  - wheel
+  - pip:
+    - -e .
+    - build
