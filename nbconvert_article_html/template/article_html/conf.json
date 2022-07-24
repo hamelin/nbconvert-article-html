@@ -2,8 +2,8 @@
     "base_template": "lab",
     "mimetypes": {"text/html": true},
     "preprocessors": {
-        "200-notes": {
-            "type": "nbconvert_article_html.CollectorNotes",
+        "200-abstract": {
+            "type": "nbconvert_article_html.CollectorAbstract",
             "enabled": true
         },
         "210-labels": {
@@ -14,17 +14,13 @@
             "type": "nbconvert_article_html.SolverRefs",
             "enabled": true
         },
-        "230-number-headings": {
-            "type": "nbconvert_article_html.NumbererHeadings",
-            "enabled": true
-        },
-        "240-legend-annotation": {
-            "type": "nbconvert_article_html.AnnotatorLegends",
+        "230-annotate": {
+            "type": "nbconvert_article_html.AnnotatorLabeledCells",
             "enabled": true
         },
         "300-tag-remove": {
             "type": "nbconvert.preprocessors.TagRemovePreprocessor",
-            "remove_cell_tags": ["drop", "abstract", "note"],
+            "remove_cell_tags": ["drop"],
             "enabled": true
         },
         "400-classes": {
