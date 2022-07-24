@@ -10,11 +10,11 @@ def run_test(name_nb: str) -> Dict:
     c = Config()
     c.TemplateExporter.preprocessors = ["nbconvert_article_html.CollectorLabels"]
     c.CollectorLabels.enabled = True
-    return export_notebook(name_nb, c)[1]
+    return export_notebook(name_nb + ".ipynb", c)[1]
 
 
 def test_labels_normal():
-    resources = run_test("labels_non_hierarchical.ipynb")
+    resources = run_test("labels_non_hierarchical")
     assert "labels" in resources
     assert resources["labels"] == {
         "note": {"a-note": "1"},
@@ -25,7 +25,7 @@ def test_labels_normal():
     
     
 def test_labels_hierarchical():
-    resources = run_test("labels_hierarchical.ipynb")
+    resources = run_test("labels_hierarchical")
     assert {
         "sec": {
             "toplevel": "1",

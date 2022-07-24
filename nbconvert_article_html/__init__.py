@@ -16,6 +16,21 @@ OutputPreprocessor = Tuple[NotebookNode, Dict]
 Annotator = Callable[[NotebookNode, Dict], OutputPreprocessor]
 
 
+class CollectorAbstract(Preprocessor):
+    
+    def preprocess_cell(
+        self,
+        cell: NotebookNode,
+        resources: Dict,
+        index: int
+    ) -> OutputPreprocessor:
+        if cell.cell_type.lower() == "markdown" and (
+            "abstract" in [t.lower() for t in cell.metadata.get("tags", [])]
+        ):
+            resources.setdefault("abstract", []).append("".join(cell.source))
+        return cell, resources
+
+    
 REFERABLE = {
     "note": {
         "ref": "<sup>{}</sup>",
