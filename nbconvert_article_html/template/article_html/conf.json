@@ -14,17 +14,17 @@
             "type": "nbconvert_article_html.CollectorLabels",
             "enabled": true
         },
-        "220-refs": {
+        "220-references": {
             "type": "nbconvert_article_html.SolverReferences",
             "enabled": true
         },
-        "230-annotate": {
-            "type": "nbconvert_article_html.AnnotatorLabeledCells",
+        "230-annotations": {
+            "type": "nbconvert_article_html.RendererAnnotations",
             "enabled": true
         },
         "300-tag-remove": {
             "type": "nbconvert.preprocessors.TagRemovePreprocessor",
-            "remove_cell_tags": ["drop"],
+            "remove_cell_tags": ["drop", "abstract"],
             "enabled": true
         },
         "400-classes": {

@@ -1,7 +1,9 @@
 from copy import deepcopy
+from importlib import import_module
 import logging as lg
 from pathlib import Path
 import re
+import sys
 from typing import *
 
 from nbconvert.exporters import HTMLExporter
@@ -13,7 +15,22 @@ log = lg.getLogger(__name__)
 
 
 OutputPreprocessor = Tuple[NotebookNode, Dict]
-Annotator = Callable[[NotebookNode, Dict], OutputPreprocessor]
+Annotator = Callable[[NotebookNode, Dict, int], Tuple[Sequence[NotebookNode], Dict, int]]
+
+
+def _is_cell_markdown(cell: NotebookNode) -> bool:
+    return cell.cell_type.lower() == "markdown"
+
+
+def _cell_tags_norm(cell: NotebookNode) -> Sequence[str]:
+    return [t.lower() for t in cell.metadata.get("tags", [])]
+
+
+def copy_cell(node: NotebookNode) -> NotebookNode:
+    copy = deepcopy(node)
+    if "id" in copy:
+        del copy["id"]
+    return copy
 
 
 class CollectorLanguage(Preprocessor):
@@ -40,9 +57,7 @@ class CollectorAbstract(Preprocessor):
         resources: Dict,
         index: int
     ) -> OutputPreprocessor:
-        if cell.cell_type.lower() == "markdown" and (
-            "abstract" in [t.lower() for t in cell.metadata.get("tags", [])]
-        ):
+        if _is_cell_markdown(cell) and "abstract" in _cell_tags_norm(cell):
             resources.setdefault("abstract", []).append("".join(cell.source))
         return cell, resources
 
@@ -95,7 +110,7 @@ class CollectorLabels(Preprocessor):
         resources: Dict,
         index: int
     ) -> OutputPreprocessor:
-        for c, label in cell["metadata"].get("label", {}).items():
+        for c, unique in cell["metadata"].get("label", {}).items():
             counters = resources.setdefault("counters", {})
             if c not in counters:
                 counters[c] = [0] * NUM_LEVELS_COUNTER_HIERARCHY
@@ -129,17 +144,32 @@ class CollectorLabels(Preprocessor):
             number = ".".join(str(n) for n in counter[:i])
             for j in range(i, NUM_LEVELS_COUNTER_HIERARCHY):
                 counter[j] = 0
-            resources.setdefault("labels", {}).setdefault(c, {})[label] = number
+            resources.setdefault("labels", {}).setdefault(c, {})[unique] = number
         return cell, resources
     
 
 RX_REFERENCE = re.compile(
-    r"\^\[(?P<text>.*?)\]\((?P<counter>[a-z]+):(?P<id>[-_a-zA-Z0-9]+)\)"
+    r"\^\[(?P<text>.*?)\]\((?P<counter>[a-z]+):(?P<unique>[-_a-zA-Z0-9]+)\)"
 )
 
 
-def ref2anchor(counter: str, id_: str) -> str:
-    return f"{counter}-{id_}"
+def _ref2anchor(counter: str, unique: str) -> str:
+    return f"{counter}-{unique}"
+
+
+def _dereference(
+    resources: Dict,
+    x: Union[NotebookNode, Tuple[str, str]],
+    default: str = "??"
+) -> str:
+    if isinstance(x, NotebookNode):
+        counter, unique = _get_label0(cast(NotebookNode, x))
+    elif hasattr(x, "__iter__") and hasattr(x, "__len__") and len(x) == 2:
+        counter, unique = x
+    else:
+        raise ValueError(f"Unsuitable reference holder: {repr(x)}")
+        
+    return resources.get("labels", {}).get(counter, {}).get(unique, default)
 
 
 class SolverReferences(Preprocessor):
@@ -166,31 +196,164 @@ class SolverReferences(Preprocessor):
                     "default template; will simply put out the number"
                 )
                 template = "{}"
-            number = resources.get("labels", {}).get(m["counter"], {}).get(m["id"], "")
+            number = _dereference(resources, (m["counter"], m["unique"]), "")
             if not number:
-                log.error(f"Reference label `{m['counter']}:{m['id']}' is unbound.")
+                log.error(f"Reference label `{m['counter']}:{m['unique']}' is unbound.")
                 number = "??"
-            return f'[{template.format(number)}](#{ref2anchor(m["counter"], m["id"])})'
+            return (
+                f'[{template.format(number)}](#{_ref2anchor(m["counter"], m["unique"])})'
+            )
         
-        if cell.cell_type.lower() == "markdown":
+        if _is_cell_markdown(cell):
             resolved = RX_REFERENCE.sub(solve, cell.source)
-            cell = deepcopy(cell)
+            cell = copy_cell(cell)
             cell["source"] = resolved
 
         return cell, resources
 
 
-class AnnotatorLabeledCells(Preprocessor):
+def _get_annotator(counter: str, scheme_annotator: str = "") -> Annotator:
+    if not scheme_annotator:
+        if counter in REFERABLE:
+            scheme_annotator = REFERABLE[counter]["annotation"]
+        else:
+            log.error(
+                f"The label counter `{counter}' is not associated to a known "
+                "annotator routine; we default to no cell modification (no-op) "
+            )
+
+    try:
+        name_module, name_annotator = scheme_annotator.split(":")
+    except ValueError:
+        raise ValueError(
+            f"Annotator descriptor `{scheme_annotator}' does not follow the "
+            "`module:function' convention."
+        )
+
+    if name_module == ".":
+        assert __name__ != "__main__"
+        module = sys.modules[__name__]
+    else:
+        module = import_module(name_module)
+    return getattr(module, name_annotator)
+
+
+def _get_label0(cell: NotebookNode) -> Tuple[str, str]:
+    assert len(cell.metadata.label) > 0
+    return [(c, u) for c, u in cell.metadata.label.items()][0]
+
+
+class RendererAnnotations(Preprocessor):
     
-    def preprocess_cell(
-        self,
-        cell: NotebookNode,
-        resources: Dict,
-        index: int
-    ) -> OutputPreprocessor:
-        return cell, resources
+    def preprocess(self, nb: NotebookNode, resources: Dict) -> OutputPreprocessor:
+        nb_new = NotebookNode({k: deepcopy(v) for k, v in nb.items() if k != "cells"})
+        nb_new["cells"] = []
+        i = 0
+        while i < len(nb.cells):
+            cell = nb.cells[i]
+            if _is_cell_markdown(cell) and "label" in cell.metadata and (
+                len(cell.metadata.label) > 0
+            ):
+                counter, unique = _get_label0(cell)
+                if len(cell.metadata.label) > 1:
+                    log.error(
+                        "The only annotation scheme supported is for a cell adorned "
+                        f"with a single label. Cell {i} has {len(cell.metadata.label)} "
+                        "labels. We annotate here only according to "
+                        f"label `{counter}:{unique}'"
+                    )
+                cells_new, resources, delta = _get_annotator(
+                    counter.strip(),
+                    cell.metadata.get("annotator", "").strip()
+                )(nb, resources, i)
+                assert delta > 0
+            else:
+                cells_new = [cell]
+                delta = 1
+            nb_new.cells += cells_new
+            i += delta
+        return nb_new, resources
 
     
+def _prepend_anchor(cell: NotebookNode) -> NotebookNode:
+    cell_new = copy_cell(cell)
+    text = "".join(cell.source)
+    counter, unique = _get_label0(cell)
+    cell_new["source"] = f'<a name="{_ref2anchor(counter, unique)}"></a>\n\n{text}'
+    return cell_new
+
+    
+def cut(
+    notebook: NotebookNode,
+    resources: Dict,
+    i: int
+) -> Tuple[Sequence[NotebookNode], Dict, int]:
+    cell = notebook.cells[i]
+    assert _is_cell_markdown(cell) and len(cell.metadata.get("label", {})) == 1
+    counter, unique = _get_label0(cell)
+    resources.setdefault("cuts", []).append(
+        {
+            "anchor": _ref2anchor(counter, unique),
+            "text": cell.source
+        }
+    )
+    return [], resources, 1
+
+
+def legend(
+    notebook: NotebookNode,
+    resources: Dict,
+    i: int
+) -> Tuple[Sequence[NotebookNode], Dict, int]:
+    cell_current = notebook.cells[i]
+    cells_new = [_prepend_anchor(cell_current)]
+    i_legend = i + 1
+    if i_legend < len(notebook.cells) and "legend" in _cell_tags_norm(
+        notebook.cells[i_legend]
+    ):
+        counter, unique = _get_label0(cell_current)
+        cell_legend = copy_cell(notebook.cells[i_legend])
+        description = REFERABLE.get(counter, {}).get("ref", {}).get(
+            resources.get("language", "en"),
+            "{}"
+        ).capitalize().format(_dereference(resources, (counter, unique)))
+        cell_legend["source"] = f"{description} &mdash; {''.join(cell_legend['source'])}"
+        cells_new.append(cell_legend)
+        
+    return cells_new, resources, len(cells_new)
+
+
+def margin(
+    notebook: NotebookNode,
+    resources: Dict,
+    i: int
+) -> Tuple[Sequence[NotebookNode], Dict, int]:
+    cell = copy_cell(notebook.cells[i])
+    number = _dereference(resources, cell)
+    text = "".join(cell.source)
+    cell["source"] = (
+        f'<div class="annotated-main">{text}</div>'
+        f'<div class="annotation-margin">({number})</div>'
+    )
+    return [_prepend_anchor(cell)], resources, 1
+
+
+def number(
+    notebook: NotebookNode,
+    resources: Dict,
+    i: int
+) -> Tuple[Sequence[NotebookNode], Dict, int]:
+    cell = copy_cell(notebook.cells[i])
+    counter, unique = _get_label0(cell)
+    number = _dereference(resources, cell)
+    text = "".join(cell.source).strip()
+    token, rest = text.split(maxsplit=1)
+    cell["source"] = (
+        f'{token} <a name="{_ref2anchor(counter, unique)}"></a>{number}. {rest}'
+    )
+    return [cell], resources, 1
+
+
 class TaggerClass(Preprocessor):
     
     def preprocess_cell(
