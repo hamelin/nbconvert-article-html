@@ -18,6 +18,22 @@ OutputPreprocessor = Tuple[NotebookNode, Dict]
 Annotator = Callable[[NotebookNode, Dict, int], Tuple[Sequence[NotebookNode], Dict, int]]
 
 
+LOCALIZED = {
+    "en": {
+        "classification": "classification",
+        "U": "unclassified",
+        "OUO": "official use only",
+        "abstract": "abstract"
+    },
+    "fr": {
+        "classification": "classification",
+        "U": "non classifié",
+        "OUO": "pour usage officiel seulement",
+        "abstract": "résumé"
+    }
+}
+
+
 def _is_cell_markdown(cell: NotebookNode) -> bool:
     return cell.cell_type.lower() == "markdown"
 
@@ -46,6 +62,8 @@ class CollectorLanguage(Preprocessor):
                 "metadata; we will assume it is English (en)"
             )
             resources["language"] = "en"
+        resources["localized"] = LOCALIZED[resources["language"]]
+        resources["today"] = dt.datetime.today().strftime("%Y-%m-%d")
         return nb, resources
     
 
