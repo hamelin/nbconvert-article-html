@@ -306,7 +306,9 @@ def legend(
     i: int
 ) -> Tuple[Sequence[NotebookNode], Dict, int]:
     cell_current = notebook.cells[i]
-    cells_new = [_prepend_anchor(cell_current)]
+    cell_new = _prepend_anchor(cell_current)
+    cell_new.metadata.setdefault("tags", []).append("displayed")
+    cells_new = [cell_new]
     i_legend = i + 1
     if i_legend < len(notebook.cells) and "legend" in _cell_tags_norm(
         notebook.cells[i_legend]
@@ -354,17 +356,6 @@ def number(
     return [cell], resources, 1
 
 
-class TaggerClass(Preprocessor):
-    
-    def preprocess_cell(
-        self,
-        cell: NotebookNode,
-        resources: Dict,
-        index: int
-    ) -> OutputPreprocessor:
-        return cell, resources
-
-    
 class ArticleExporter(HTMLExporter):
 
     @property
