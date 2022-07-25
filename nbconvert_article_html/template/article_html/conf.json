@@ -5,7 +5,7 @@
         "150-language": {
             "type": "nbconvert_article_html.CollectorLanguage",
             "enabled": true
-        }
+        },
         "200-abstract": {
             "type": "nbconvert_article_html.CollectorAbstract",
             "enabled": true

@@ -17,17 +17,24 @@ body {
     font-size: 300%;
     font-weight: 900;
 }
+
 .title p {
     margin-top: 1em;
     margin-bottom: 0.5em;
+    text-align: center;
 }
 
-.authors {
-    
+.authors, .date {
+    font-size: larger;
+    text-align: center;
+    margin-bottom: 1em;
 }
 
 div.abstract {
-    margin-bottom: 1em;
+    margin-top: 2em;
+    margin-bottom: 5em;
+    border-top: 0.75px solid black;
+    border-bottom: 0.75px solid black;
 }
 
 .abstract p {
@@ -43,21 +50,123 @@ div.abstract {
 }
 
 .highlight > pre {
-    padding-top: 5pt;
-    padding-left: 5pt;
-    padding-right: 5pt;
-    padding-bottom: 5pt;
+    margin-left: 2ex;
+    margin-right: 2ex;
 }
 
 hr {
     margin-bottom: 2em;
 }
 
+.annotation-container {
+    text-align: center;
+    width: 100%;
+    display: table-row;
+}
 
+.annotated-main, .annotation-margin {
+    vertical-align: middle;
+}
+
+.annotated-main .MJXc-display {
+    display: inline;
+}
+
+.annotated-main {
+    display: table-cell;
+    text-align: center;
+    width: 100%;
+}
+
+.annotation-margin {
+    text-align: right;
+    display: table-cell;
+    height: 1.1em;
+    min-width: 4ex;
+}
+
+.celltag_legendary {
+    text-align: center;
+    margin-left: 5ex;
+    margin-right: 5ex;
+    border: solid 0.75pt black;
+    padding-bottom: 2ex;
+}
+
+.celltag_legendary pre {
+    text-align: left;
+}
+
+.celltag_legend {
+    text-align: center;
+    font-size: smaller;
+    font-weight: bold;
+}
+
+.celltag_legend p {
+    margin-top: 0pt;
+}
+
+.celltag_tab {
+    margin-bottom: 2ex;
+}
+
+.celltag_tab table {
+    display: inline;
+}
+
+.notes li {
+    margin-bottom: 1em;
+}
 </style>
 {%- endblock notebook_css -%}
 
 {%- block body_header -%}
 {{ super() }}
-<p>Heyhey!</p>
+{% if "security" in nb.metadata %}
+<div class="classification">
+{{ resources["localized"]["classification"] }}: {{ resources["localized"][nb.metadata.security.classification] }}{% if "control" in nb.metadata.security %}//{{ resources["localized"][nb.metadata.security.control] }}{% if "distribution" in nb.metadata.security %}//{{ resources["localized"][nb.metadata.security.control] }}{% endif %}{% endif %}
+</div>
+{% endif %}
+<div class="title">
+{%- set nb_title = nb.metadata.get('title', '') or resources['metadata']['name'] -%}
+{{nb_title | markdown2html}}
+</div>
+<div class="authors">
+{% if "authors" in nb.metadata %}
+{%- set authors = nb.metadata.authors | map(attribute="name") | list -%}
+{% if (authors | length) < 2 %}
+{{ authors[0] }}
+{% else %}
+{%- set author_last = authors[-1] -%}
+{{ authors[:-1] | join(', ') }} {{ resources["localized"]["and"] }} {{ author_last }}
+{% endif %}
+</div>
+{% endif %}
+<div class="date">
+{{ nb.metadata.get("date", '') or resources.get("today", "") }}
+</div>
+{% if "abstract" in resources %}
+<div class="abstract">
+<a name="abstract"></a>
+<p class="heading">{{resources["localized"]["abstract"].capitalize()}}</p>
+{{ resources['abstract'] | join("\n\n") | markdown2html }}
+</div>
+{% endif %}
 {%- endblock body_header -%}
+
+{% block body_footer %}
+{% set notes = resources.get("cuts", []) | selectattr("note") | list %}
+{% if (notes | length) > 0 %}
+<h1><a name="notes-references"></a>{{ resources["localized"]["notes"] | capitalize }}</h1>
+<ol class="notes">
+{% for note in notes %}
+<li class="note-item" value="{{ note.note }}">
+<a name="{{ note.anchor }}"></a>
+{{- note.text | markdown2html | deparagraphize -}}
+</li>
+{% endfor %}
+</ol>
+{% endif %}
+{{ super() }}
+{% endblock body_footer %}

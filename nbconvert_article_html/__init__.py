@@ -1,14 +1,17 @@
+from bs4 import BeautifulSoup
 from copy import deepcopy
+import datetime as dt
 from importlib import import_module
+from jinja2 import pass_context
 import logging as lg
-from pathlib import Path
-import re
-import sys
-from typing import *
-
 from nbconvert.exporters import HTMLExporter
 from nbconvert.preprocessors import Preprocessor
 from nbformat import NotebookNode
+from pathlib import Path
+import re
+import sys
+import traitlets as tl
+from typing import *
 
 
 log = lg.getLogger(__name__)
@@ -23,13 +26,17 @@ LOCALIZED = {
         "classification": "classification",
         "U": "unclassified",
         "OUO": "official use only",
-        "abstract": "abstract"
+        "abstract": "abstract",
+        "notes": "notes and references",
+        "and": "and"
     },
     "fr": {
         "classification": "classification",
         "U": "non classifié",
         "OUO": "pour usage officiel seulement",
-        "abstract": "résumé"
+        "abstract": "résumé",
+        "notes": "notes et références",
+        "and": "et"
     }
 }
 
@@ -311,6 +318,7 @@ def cut(
     counter, unique = _get_label0(cell)
     resources.setdefault("cuts", []).append(
         {
+            counter: str(_dereference(resources, (counter, unique))),
             "anchor": _ref2anchor(counter, unique),
             "text": cell.source
         }
@@ -324,14 +332,15 @@ def legend(
     i: int
 ) -> Tuple[Sequence[NotebookNode], Dict, int]:
     cell_current = notebook.cells[i]
+    counter, unique = _get_label0(cell_current)
     cell_new = _prepend_anchor(cell_current)
-    cell_new.metadata.setdefault("tags", []).append("displayed")
+    cell_new.metadata.setdefault("tags", [])
+    cell_new.metadata.tags += ["legendary", counter]
     cells_new = [cell_new]
     i_legend = i + 1
     if i_legend < len(notebook.cells) and "legend" in _cell_tags_norm(
         notebook.cells[i_legend]
     ):
-        counter, unique = _get_label0(cell_current)
         cell_legend = copy_cell(notebook.cells[i_legend])
         description = REFERABLE.get(counter, {}).get("ref", {}).get(
             resources.get("language", "en"),
@@ -352,8 +361,10 @@ def margin(
     number = _dereference(resources, cell)
     text = "".join(cell.source)
     cell["source"] = (
+        '<div class="annotation-container">'
         f'<div class="annotated-main">{text}</div>'
         f'<div class="annotation-margin">({number})</div>'
+        '</div>'
     )
     return [_prepend_anchor(cell)], resources, 1
 
@@ -374,20 +385,32 @@ def number(
     return [cell], resources, 1
 
 
+_DIR_TEMPLATE = Path(__file__).parent / "template"
+
+
+@pass_context
+def _deparagraphize(context, source):
+    soup = BeautifulSoup(source, "html.parser")
+    if soup.p is None:
+        return source
+    return "".join(str(x) for x in soup.p.contents)
+
+    
 class ArticleExporter(HTMLExporter):
 
-    @property
-    def _dir_template_within_module(self) -> Path:
-        return Path(__file__).parent / "template"
-
-    @property
-    def extra_template_basedirs(self):
-        return super()._default_extra_template_basedirs() + [
-            str(self._dir_template_within_module)
-        ]
-
+    extra_template_basedirs = tl.List([str(_DIR_TEMPLATE)]).tag(
+        config=True,
+        affects_environment=True
+    )
+    
+    exclude_anchor_links = tl.Bool(True).tag(config=True)
+    
     def _template_name_default(self):
-        for p in self._dir_template_within_module.iterdir():
+        for p in _DIR_TEMPLATE.iterdir():
             if p.is_dir():
-                return p.name
+                return str(p)
         assert False, "Why is the template not where expected?"
+
+    def default_filters(self):
+        yield from super().default_filters()
+        yield ("deparagraphize", _deparagraphize)
