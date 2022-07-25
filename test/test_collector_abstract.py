@@ -8,8 +8,8 @@ from . import export_notebook
 
 def run_test(name_nb: str, expected: Optional[str]) -> Dict:
     c = Config()
-    c.TemplateExporter.preprocessors = ["nbconvert_article_html.CollectorAbstract"]
-    c.CollectorLabels.enabled = True
+    c.Exporter.preprocessors = ["nbconvert_article_html.CollectorAbstract"]
+    c.CollectorAbstract.enabled = True
     _, resources = export_notebook(name_nb + ".ipynb", c)
     if expected is None:
         assert "abstract" not in resources

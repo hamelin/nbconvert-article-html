@@ -8,7 +8,7 @@ from . import export_notebook
 
 def run_test(name_nb: str) -> Dict:
     c = Config()
-    c.TemplateExporter.preprocessors = ["nbconvert_article_html.CollectorLabels"]
+    c.Exporter.preprocessors = ["nbconvert_article_html.CollectorLabels"]
     c.CollectorLabels.enabled = True
     return export_notebook(name_nb + ".ipynb", c)[1]
 

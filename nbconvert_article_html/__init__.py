@@ -16,6 +16,22 @@ OutputPreprocessor = Tuple[NotebookNode, Dict]
 Annotator = Callable[[NotebookNode, Dict], OutputPreprocessor]
 
 
+class CollectorLanguage(Preprocessor):
+    
+    def preprocess(self, nb: NotebookNode, resources: Dict) -> OutputPreprocessor:
+        resources["language"] = nb.metadata.get("language", "") or nb.metadata.get(
+            "lang",
+            ""
+        )
+        if not resources["language"]:
+            log.warning(
+                "The language of this notebook is not explicitly defined in its "
+                "metadata; we will assume it is English (en)"
+            )
+            resources["language"] = "en"
+        return nb, resources
+    
+
 class CollectorAbstract(Preprocessor):
     
     def preprocess_cell(
@@ -116,8 +132,17 @@ class CollectorLabels(Preprocessor):
             resources.setdefault("labels", {}).setdefault(c, {})[label] = number
         return cell, resources
     
-    
-class SolverRefs(Preprocessor):
+
+RX_REFERENCE = re.compile(
+    r"\^\[(?P<text>.*?)\]\((?P<counter>[a-z]+):(?P<id>[-_a-zA-Z0-9]+)\)"
+)
+
+
+def ref2anchor(counter: str, id_: str) -> str:
+    return f"{counter}-{id_}"
+
+
+class SolverReferences(Preprocessor):
     
     def preprocess_cell(
         self,
@@ -125,9 +150,36 @@ class SolverRefs(Preprocessor):
         resources: Dict,
         index: int
     ) -> OutputPreprocessor:
-        return 
+        def solve(m: re.Match) -> str:
+            template_ = m["text"].strip() or REFERABLE.get(
+                m["counter"], {}
+            ).get("ref", {})
+            if isinstance(template_, dict):
+                template = template_.get(resources.get("language", "en"), "")
+            else:
+                template = cast(str, template_ or "")
+            if not template:
+                log.error(
+                    f"No template string provided for reference `{m.group(0)}' in cell "
+                    f"{index}, and the counter `{m['counter']}' and language "
+                    f"`{resources.get('language', 'en')}' do not suggest a "
+                    "default template; will simply put out the number"
+                )
+                template = "{}"
+            number = resources.get("labels", {}).get(m["counter"], {}).get(m["id"], "")
+            if not number:
+                log.error(f"Reference label `{m['counter']}:{m['id']}' is unbound.")
+                number = "??"
+            return f'[{template.format(number)}](#{ref2anchor(m["counter"], m["id"])})'
+        
+        if cell.cell_type.lower() == "markdown":
+            resolved = RX_REFERENCE.sub(solve, cell.source)
+            cell = deepcopy(cell)
+            cell["source"] = resolved
 
-    
+        return cell, resources
+
+
 class AnnotatorLabeledCells(Preprocessor):
     
     def preprocess_cell(
