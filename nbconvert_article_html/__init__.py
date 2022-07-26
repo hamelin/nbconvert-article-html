@@ -396,20 +396,14 @@ def _deparagraphize(context, source):
     return "".join(str(x) for x in soup.p.contents)
 
     
-class ArticleExporter(HTMLExporter):
+class ArticleHTMLExporter(HTMLExporter):
 
-    extra_template_basedirs = tl.List([str(_DIR_TEMPLATE)]).tag(
-        config=True,
-        affects_environment=True
-    )
+    export_from_notebook = "Article (HTML)"
     
     exclude_anchor_links = tl.Bool(True).tag(config=True)
-    
+
     def _template_name_default(self):
-        for p in _DIR_TEMPLATE.iterdir():
-            if p.is_dir():
-                return str(p)
-        assert False, "Why is the template not where expected?"
+        return str(_DIR_TEMPLATE / "article-html")
 
     def default_filters(self):
         yield from super().default_filters()
