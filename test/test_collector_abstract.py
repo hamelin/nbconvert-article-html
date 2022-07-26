@@ -6,7 +6,7 @@ from traitlets.config import Config
 from . import export_notebook
 
 
-def run_test(name_nb: str, expected: Optional[str]) -> Dict:
+def run_test(name_nb: str, expected: Optional[str]) -> None:
     c = Config()
     c.Exporter.preprocessors = ["nbconvert_article_html.CollectorAbstract"]
     c.CollectorAbstract.enabled = True
