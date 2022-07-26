@@ -231,10 +231,10 @@ conda activate nbconvert-article-html
 
 I use [Flake8](https://github.com/pycqa/flake8) and type annotations ([mypy](http://mypy-lang.org/)) to track code issues statically,
 as well unit tests (run with [pytest](https://docs.pytest.org/en/7.1.x/)) to ensure some baseline code properties.
-One day I'll write up a script to run all these elegantly, but until then, I use this command line:
+To run all these:
 
 ```
-mypy --ignore-missing-imports . && pytest && flake8
+python script/checks.py
 ```
 
 ### Organization
