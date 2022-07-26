@@ -1,9 +1,7 @@
 import json
 from textwrap import dedent
-from typing import *
-
-import pytest
 from traitlets.config import Config
+from typing import *
 
 from . import export_notebook
 
@@ -28,7 +26,7 @@ def run_test(
         assert "cuts" in resources
         assert resources["cuts"] == expected_cuts
 
-        
+
 def test_annotations_common():
     run_test(
         "annotations-common",
@@ -48,7 +46,7 @@ def test_annotations_common():
             '## <a name="sec-minor"></a>2.1. And first minor division',
             dedent("""\
                 <a name="fig-code"></a>
-                
+
                 ```python
                 def f(a, b):
                     print(a + b)

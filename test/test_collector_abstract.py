@@ -1,7 +1,6 @@
 from textwrap import dedent
-from typing import *
-
 from traitlets.config import Config
+from typing import *
 
 from . import export_notebook
 
@@ -28,7 +27,7 @@ def test_abstract_one_cell():
         "abstract-one-cell",
         """\
         This _is_ the abstract.
-        
+
         There is more than one paragraph to it.\
         """
     )
@@ -39,22 +38,22 @@ def test_abstract_one_cell_single_string():
         "abstract-one-cell-single-string",
         """\
         This _is_ the abstract.
-        
+
         There is more than one paragraph to it.\
         """
     )
-    
-    
+
+
 def test_abstract_three_cells():
     run_test(
         "abstract-three-cells",
         """\
         This _is_ the abstract.
-        
+
         There is more than one paragraph to it.
-        
+
         This, though, is also in the abstract.
-        
+
         And, finally, this.\
         """
     )

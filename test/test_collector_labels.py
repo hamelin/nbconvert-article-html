@@ -1,7 +1,5 @@
-from typing import *
-
-import pytest
 from traitlets.config import Config
+from typing import *
 
 from . import export_notebook
 
@@ -22,8 +20,8 @@ def test_labels_normal():
         "fig": {"some-code": "1"},
         "tab": {"head-foot": "1"}
     }
-    
-    
+
+
 def test_labels_hierarchical():
     resources = run_test("labels_hierarchical")
     assert {
@@ -43,4 +41,3 @@ def test_labels_hierarchical():
             "final": "2.2.2"
         }
     } == resources["labels"]
-    

@@ -1,8 +1,6 @@
 import json
-from typing import *
-
-import pytest
 from traitlets.config import Config
+from typing import *
 
 from . import export_notebook
 
@@ -21,8 +19,8 @@ def run_test(name_nb: str, expected: Dict[int, str]) -> None:
     nb = json.loads(nb_)
     for i, source_expected in expected.items():
         assert source_expected == "".join(nb["cells"][i]["source"])
-    
-    
+
+
 def test_references_simple():
     run_test(
         "references-simple",
@@ -34,7 +32,7 @@ def test_references_simple():
         }
     )
 
-    
+
 def test_references_custom():
     run_test(
         "references-custom",
@@ -45,8 +43,8 @@ def test_references_custom():
             )
         }
     )
-    
-    
+
+
 def test_references_before_appearance():
     run_test(
         "references-before-appearance",
@@ -58,8 +56,8 @@ def test_references_before_appearance():
             )
         }
     )
-    
-    
+
+
 def test_references_notes():
     run_test(
         "references-notes",

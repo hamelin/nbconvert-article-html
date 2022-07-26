@@ -18,7 +18,10 @@ log = lg.getLogger(__name__)
 
 
 OutputPreprocessor = Tuple[NotebookNode, Dict]
-Annotator = Callable[[NotebookNode, Dict, int], Tuple[Sequence[NotebookNode], Dict, int]]
+Annotator = Callable[
+    [NotebookNode, Dict, int],
+    Tuple[Sequence[NotebookNode], Dict, int]
+]
 
 
 LOCALIZED = {
@@ -57,7 +60,7 @@ def copy_cell(node: NotebookNode) -> NotebookNode:
 
 
 class CollectorLanguage(Preprocessor):
-    
+
     def preprocess(self, nb: NotebookNode, resources: Dict) -> OutputPreprocessor:
         resources["language"] = nb.metadata.get("language", "") or nb.metadata.get(
             "lang",
@@ -72,10 +75,10 @@ class CollectorLanguage(Preprocessor):
         resources["localized"] = LOCALIZED[resources["language"]]
         resources["today"] = dt.datetime.today().strftime("%Y-%m-%d")
         return nb, resources
-    
+
 
 class CollectorAbstract(Preprocessor):
-    
+
     def preprocess_cell(
         self,
         cell: NotebookNode,
@@ -86,7 +89,7 @@ class CollectorAbstract(Preprocessor):
             resources.setdefault("abstract", []).append("".join(cell.source))
         return cell, resources
 
-    
+
 REFERABLE: Mapping[str, Mapping] = {
     "note": {
         "ref": "<sup>{}</sup>",
@@ -124,7 +127,7 @@ NUM_LEVELS_COUNTER_HIERARCHY = 10
 
 
 class CollectorLabels(Preprocessor):
-    
+
     def preprocess_cell(
         self,
         cell: NotebookNode,
@@ -146,9 +149,9 @@ class CollectorLabels(Preprocessor):
                     else:
                         raise ValueError(
                             f"The regular expression `{rx}' used to express how to "
-                            "derive the hierarchical counter level is invalid. Its match "
-                            "must return either a group of name `count' or a group of "
-                            "name `number'."
+                            "derive the hierarchical counter level is invalid. Its "
+                            "match must return either a group of name `count' or a "
+                            "group of name `number'."
                         )
                 else:
                     log.error(
@@ -167,7 +170,7 @@ class CollectorLabels(Preprocessor):
                 counter[j] = 0
             resources.setdefault("labels", {}).setdefault(c, {})[unique] = number
         return cell, resources
-    
+
 
 RX_REFERENCE = re.compile(
     r"\^\[(?P<text>.*?)\]\((?P<counter>[a-z]+):(?P<unique>[-_a-zA-Z0-9]+)\)"
@@ -189,12 +192,12 @@ def _dereference(
         counter, unique = x
     else:
         raise ValueError(f"Unsuitable reference holder: {repr(x)}")
-        
+
     return resources.get("labels", {}).get(counter, {}).get(unique, default)
 
 
 class SolverReferences(Preprocessor):
-    
+
     def preprocess_cell(
         self,
         cell: NotebookNode,
@@ -217,9 +220,10 @@ class SolverReferences(Preprocessor):
                 log.error(f"Reference label `{m['counter']}:{m['unique']}' is unbound.")
                 number = "??"
             return (
-                f'[{template.format(number)}](#{_ref2anchor(m["counter"], m["unique"])})'
+                f'[{template.format(number)}]('
+                f'#{_ref2anchor(m["counter"], m["unique"])})'
             )
-        
+
         if _is_cell_markdown(cell):
             resolved = RX_REFERENCE.sub(solve, cell.source)
             cell = copy_cell(cell)
@@ -260,7 +264,7 @@ def _get_label0(cell: NotebookNode) -> Tuple[str, str]:
 
 
 class RendererAnnotations(Preprocessor):
-    
+
     def preprocess(self, nb: NotebookNode, resources: Dict) -> OutputPreprocessor:
         nb_new = NotebookNode({k: deepcopy(v) for k, v in nb.items() if k != "cells"})
         nb_new["cells"] = []
@@ -290,7 +294,7 @@ class RendererAnnotations(Preprocessor):
             i += delta
         return nb_new, resources
 
-    
+
 def _prepend_anchor(cell: NotebookNode) -> NotebookNode:
     cell_new = copy_cell(cell)
     text = "".join(cell.source)
@@ -298,7 +302,7 @@ def _prepend_anchor(cell: NotebookNode) -> NotebookNode:
     cell_new["source"] = f'<a name="{_ref2anchor(counter, unique)}"></a>\n\n{text}'
     return cell_new
 
-    
+
 def cut(
     notebook: NotebookNode,
     resources: Dict,
@@ -337,12 +341,14 @@ def legend(
             "name",
             {"en": "resource {}", "fr": "ressource {}"}
         ).get(
-            resources.get("language", "en"), 
+            resources.get("language", "en"),
             "resource {}"
         ).capitalize().format(_dereference(resources, (counter, unique)))
-        cell_legend["source"] = f"{description} &mdash; {''.join(cell_legend['source'])}"
+        cell_legend["source"] = (
+            f"{description} &mdash; {''.join(cell_legend['source'])}"
+        )
         cells_new.append(cell_legend)
-        
+
     return cells_new, resources, len(cells_new)
 
 
@@ -389,11 +395,11 @@ def _deparagraphize(context, source):
         return source
     return "".join(str(x) for x in soup.p.contents)
 
-    
+
 class ArticleHTMLExporter(HTMLExporter):
 
     export_from_notebook = "Article (HTML)"
-    
+
     exclude_anchor_links = tl.Bool(True).tag(config=True)
 
     def _template_name_default(self):
