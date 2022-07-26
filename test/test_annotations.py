@@ -12,7 +12,7 @@ def run_test(
     name_nb: str,
     expected_cells: List[str],
     expected_cuts: List[Dict[str, str]]
-) -> Dict:
+) -> None:
     c = Config()
     c.Exporter.preprocessors = [
         "nbconvert_article_html.CollectorLanguage",

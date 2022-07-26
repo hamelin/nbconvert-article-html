@@ -7,7 +7,7 @@ from traitlets.config import Config
 from . import export_notebook
 
 
-def run_test(name_nb: str, expected: Dict[int, str]) -> Dict:
+def run_test(name_nb: str, expected: Dict[int, str]) -> None:
     c = Config()
     c.Exporter.preprocessors = [
         "nbconvert_article_html.CollectorLanguage",

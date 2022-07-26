@@ -87,7 +87,7 @@ class CollectorAbstract(Preprocessor):
         return cell, resources
 
     
-REFERABLE = {
+REFERABLE: Mapping[str, Mapping] = {
     "note": {
         "ref": "<sup>{}</sup>",
         "annotation": ".:cut"
