@@ -93,31 +93,27 @@ REFERABLE = {
         "annotation": ".:cut"
     },
     "fig": {
-        "ref": {
-            "en": "Figure {}",
-            "fr": "figure {}"
+        "ref": "{}",
+        "name": {
+            "en": "Figure",
+            "fr": "Figure"
         },
         "annotation": ".:legend"
     },
     "tab": {
-        "ref": {
-            "en": "Table {}",
-            "fr": "tableau {}"
+        "ref": "{}",
+        "name": {
+            "en": "Table",
+            "fr": "Tableau"
         },
         "annotation": ".:legend"
     },
     "eq": {
-        "ref": {
-            "en": "Equation {}",
-            "fr": "e&#769;quation {}"
-        },
+        "ref": "{}",
         "annotation": ".:margin"
     },
     "sec": {
-        "ref": {
-            "en": "Section {}",
-            "fr": "section {}"
-        },
+        "ref": "{}",
         "hierarchy": r"^(?P<count>#+)",
         "annotation": ".:number"
     }
@@ -206,18 +202,13 @@ class SolverReferences(Preprocessor):
         index: int
     ) -> OutputPreprocessor:
         def solve(m: re.Match) -> str:
-            template_ = m["text"].strip() or REFERABLE.get(
+            template = m["text"].strip() or REFERABLE.get(
                 m["counter"], {}
-            ).get("ref", {})
-            if isinstance(template_, dict):
-                template = template_.get(resources.get("language", "en"), "")
-            else:
-                template = cast(str, template_ or "")
+            ).get("ref", "")
             if not template:
-                log.error(
+                log.warning(
                     f"No template string provided for reference `{m.group(0)}' in cell "
-                    f"{index}, and the counter `{m['counter']}' and language "
-                    f"`{resources.get('language', 'en')}' do not suggest a "
+                    f"{index}, and the counter `{m['counter']}' does not suggest a "
                     "default template; will simply put out the number"
                 )
                 template = "{}"
@@ -342,8 +333,11 @@ def legend(
         notebook.cells[i_legend]
     ):
         cell_legend = copy_cell(notebook.cells[i_legend])
-        description = REFERABLE.get(counter, {}).get("ref", {}).get(
-            resources.get("language", "en"),
+        description = REFERABLE.get(counter, {}).get(
+            "name",
+            {"en": "resource", "fr": "ressource"}
+        ).get(
+            resources.get("language", "en"), 
             "{}"
         ).capitalize().format(_dereference(resources, (counter, unique)))
         cell_legend["source"] = f"{description} &mdash; {''.join(cell_legend['source'])}"
