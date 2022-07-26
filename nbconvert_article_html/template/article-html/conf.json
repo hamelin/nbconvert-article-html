@@ -2,12 +2,8 @@
     "base_template": "lab",
     "mimetypes": {"text/html": true},
     "preprocessors": {
-        "150-language": {
+        "200-language": {
             "type": "nbconvert_article_html.CollectorLanguage",
-            "enabled": true
-        },
-        "200-abstract": {
-            "type": "nbconvert_article_html.CollectorAbstract",
             "enabled": true
         },
         "210-labels": {
@@ -22,7 +18,11 @@
             "type": "nbconvert_article_html.RendererAnnotations",
             "enabled": true
         },
-        "300-tag-remove": {
+        "300-abstract": {
+            "type": "nbconvert_article_html.CollectorAbstract",
+            "enabled": true
+        },
+        "400-tag-remove": {
             "type": "nbconvert.preprocessors.TagRemovePreprocessor",
             "remove_cell_tags": ["drop", "abstract"],
             "enabled": true

@@ -1,4 +1,4 @@
-# Article/HTML exporter and template for nbconvert
+# Article-HTML exporter and template for nbconvert
 
 This package provides an exporter and template to render a Jupyter notebook into a self-contained HTML file whose layout is similar to a LaTeX article.
 Such documents are presented so as to facilitate their reading and perusal both on a print-out and a screen,
@@ -204,12 +204,59 @@ For instance, let's have a custom template named **article-airy** that adds more
 ```jinja2
 {% extends 'article-html/index.html.j2' %}
 
-{{%- block notebook_css -%}}
+{%- block notebook_css -%}
 {{ super() }}
 <style type="text/css">
 div.abstract {
     margin-bottom: 1.5in;
 }
 </style>
-{{%- endblock notebook_css -%}}
+{%- endblock notebook_css -%}
 ```
+
+
+## Development
+
+### Setup
+
+My favored development environment uses Conda.
+Git-clone the project, then run
+
+```sh
+conda env create
+conda activate nbconvert-article-html
+```
+
+### Code quality checks
+
+I use [Flake8](https://github.com/pycqa/flake8) and type annotations ([mypy](http://mypy-lang.org/)) to track code issues statically,
+as well unit tests (run with [pytest](https://docs.pytest.org/en/7.1.x/)) to ensure some baseline code properties.
+One day I'll write up a script to run all these elegantly, but until then, I use this command line:
+
+```
+mypy --ignore-missing-imports . && pytest && flake8
+```
+
+### Organization
+
+As suggested [here](https://nbconvert.readthedocs.io/en/latest/external_exporters.html#writing-a-custom-exporter), I have rolled my extensive custom package into a custom nbconvert exporter.
+This turned out to be more than just a packaging trick, as late in development I discovered I needed to tweak some code-based functionality of the `HTMLExporter` base class.
+However, pretty much all features of this package are driven by a sequence of notebook preprocessors configured through the [`conf.json`](nbconvert_article_html/template/article-html/conf.json) core template file.
+
+#### Intended exportation workflow
+
+The usage of a sequence of preprocessing steps facilitates the reading of the code:
+the intents pursued are not all tangled in one long and messy preprocessor.
+Here is the sequence of preprocessors and how we intend they respectively transform the input notebook prior to HTML rendering.
+Remark that the sequence of preprocessors all share a free-form dictionary called `resources`, which enables passing data between them.
+
+1. `CollectorLanguage`: picks up the language of the notebook and initializes resources with proper string translations.
+1. `CollectorLabels`: maps into the resource dictionary the cell labels to their computed numbers.
+1. `SolverReferences`: replaces all instances of the `^[...](...)` notation in the Markdown cells with proper Markdown internal links to the appropriate anchors.
+1. `RendererAnnotations`: visits labeled cells and changes their text in order to incorporate the number of the component in a specific manner.
+1. `CollectorAbstract`: captures the text of the abstract into .
+1. We then configure the standard by-tag cell removal preprocessor so that it discards cells tagged `drop` or `abstract`.
+
+The exportation then proceeds with a core HTML template that replaces a lot of Jupyter's own styling material
+(which I find bloated and excessive).
+This template provides the rendering of the header and the abstract prior to the document's own core, which is followed with a level-1 section of end notes.
