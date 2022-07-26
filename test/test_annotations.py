@@ -58,12 +58,15 @@ def test_annotations_common():
             "Figure 1 &mdash; This is the code of function `f`.",
             (
                 '<a name="eq-a-plus-b"></a>\n\n'
+                '<div class="annotation-container">'
                 '<div class="annotated-main">$$f(a, b) = a + b$$</div>'
                 '<div class="annotation-margin">(1)</div>'
+                '</div>'
             )
         ],
         [
             {
+                "note": "1",
                 "anchor": "note-forgetting",
                 "text": "Forgetting is what again?"
             }
