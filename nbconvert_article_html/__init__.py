@@ -95,16 +95,16 @@ REFERABLE = {
     "fig": {
         "ref": "{}",
         "name": {
-            "en": "Figure",
-            "fr": "Figure"
+            "en": "Figure {}",
+            "fr": "Figure {}"
         },
         "annotation": ".:legend"
     },
     "tab": {
         "ref": "{}",
         "name": {
-            "en": "Table",
-            "fr": "Tableau"
+            "en": "Table {}",
+            "fr": "Tableau {}"
         },
         "annotation": ".:legend"
     },
@@ -335,10 +335,10 @@ def legend(
         cell_legend = copy_cell(notebook.cells[i_legend])
         description = REFERABLE.get(counter, {}).get(
             "name",
-            {"en": "resource", "fr": "ressource"}
+            {"en": "resource {}", "fr": "ressource {}"}
         ).get(
             resources.get("language", "en"), 
-            "{}"
+            "resource {}"
         ).capitalize().format(_dereference(resources, (counter, unique)))
         cell_legend["source"] = f"{description} &mdash; {''.join(cell_legend['source'])}"
         cells_new.append(cell_legend)
