@@ -28,8 +28,8 @@ def test_references_simple():
         "references-simple",
         {
             4: (
-                "In reverse order, I can reference [Equation 2](#eq-exponential) and "
-                "[Equation 1](#eq-quadratic)."
+                "In reverse order, I can reference equations [2](#eq-exponential) and "
+                "[1](#eq-quadratic)."
             )
         }
     )
@@ -40,7 +40,7 @@ def test_references_custom():
         "references-custom",
         {
             2: (
-                "From here, I can reference [Section 1](#sec-one) using the default "
+                "From here, I can reference Section [1](#sec-one) using the default "
                 "reference, as well as put [my own link, 2](#sec-two)."
             )
         }

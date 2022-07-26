@@ -15,7 +15,6 @@ def run_test(
 ) -> None:
     c = Config()
     c.Exporter.preprocessors = [
-        "nbconvert_article_html.CollectorLanguage",
         "nbconvert_article_html.CollectorLabels",
         "nbconvert_article_html.RendererAnnotations"
     ]
